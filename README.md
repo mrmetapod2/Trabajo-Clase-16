@@ -122,6 +122,7 @@ GET	/projects	Listar (con paginación/filtros/orden)
 
 ### Tareas
 Método	Ruta	Descripción
+
 -GET	/tasks	Listar (con paginación/filtros/orden/búsqueda)
 
 -POST	/tasks	Crear tarea
