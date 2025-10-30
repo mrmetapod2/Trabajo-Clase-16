@@ -1,6 +1,5 @@
 import Task from "../models/task.model.js";
 
-// CREATE
 export const createTask = async (req, res) => {
   try {
     const task = await Task.create(req.body);
@@ -10,13 +9,11 @@ export const createTask = async (req, res) => {
   }
 };
 
-// READ
-export const getTaskById = async (req, res) => {
+export const getTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id)
-      .populate("project")
       .populate("assignedTo")
-      .populate("dependencies");
+      .populate("project");
     if (!task) return res.status(404).json({ message: "Task not found" });
     res.json(task);
   } catch (error) {
@@ -24,46 +21,40 @@ export const getTaskById = async (req, res) => {
   }
 };
 
-// UPDATE
+export const listTasks = async (req, res) => {
+  try {
+    const { status, priority, assignedTo, project, page = 1, limit = 10 } = req.query;
+    const query = {};
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+    if (assignedTo) query.assignedTo = assignedTo;
+    if (project) query.project = project;
+
+    const tasks = await Task.find(query)
+      .populate("assignedTo")
+      .populate("project")
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const updateTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!task) return res.status(404).json({ message: "Task not found" });
-    res.json(task);
+    const updated = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) return res.status(404).json({ message: "Task not found" });
+    res.json(updated);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-// DELETE
 export const deleteTask = async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
-    if (!task) return res.status(404).json({ message: "Task not found" });
-    res.json({ message: "Task deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// LIST (with filters, pagination, sorting)
-export const listTasks = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, status, priority, project, sort = "createdAt" } = req.query;
-    const query = {};
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
-    if (project) query.project = project;
-
-    const tasks = await Task.find(query)
-      .sort(sort)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .populate("project")
-      .populate("assignedTo");
-
-    const total = await Task.countDocuments(query);
-    res.json({ total, page: parseInt(page), tasks });
+    await Task.findByIdAndDelete(req.params.id);
+    res.json({ message: "Task deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
